@@ -30,6 +30,14 @@ model.eval()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
+# Hardcoded reviews
+hardcoded_reviews = [
+    {"name": "Rami", "review": "Rami provided an excellent service with a modern haircut that was quick and professional. Highly recommended!"},
+    {"name": "Madushanka", "review": "Madushanka's work on traditional makeup wasn't up to par this time, lacked the usual charm."},
+    {"name": "Manoj", "review": "Manoj was quite informative and friendly while providing a quick and efficient haircut. Very happy with the results!"},
+    {"name": "Sasha", "review": "Sasha’s work was disciplined but too slow, and the support was lacking during the long session."}
+]
+
 # Function to predict sentiment
 def predict_sentiment(review):
     encoded_review = tokenizer.encode_plus(
@@ -49,8 +57,9 @@ def predict_sentiment(review):
 
 # Route to analyze and recommend beauticians
 @app.post("/recommend/")
-async def recommend_beauticians(reviews: List[Review], preferences: Preference):
-    beauticians = pd.DataFrame([review.dict() for review in reviews])
+async def recommend_beauticians(preferences: Preference):
+    # Convert hardcoded reviews to DataFrame
+    beauticians = pd.DataFrame(hardcoded_reviews)
     beauticians['sentiment_score'] = beauticians['review'].apply(predict_sentiment)
 
     # Calculate scores based on sentiment and preferences
@@ -66,3 +75,6 @@ async def recommend_beauticians(reviews: List[Review], preferences: Preference):
     recommended = beauticians.sort_values(by='score', ascending=False)
     return recommended[['name', 'score']].to_dict(orient='records')
 
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
