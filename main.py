@@ -1,10 +1,40 @@
+from importlib import metadata
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List
+from requests import Session
 import torch
 from transformers import BertTokenizer, BertForSequenceClassification
 import pandas as pd
 from textblob import TextBlob
+
+
+from models import admin_model, beautician_model, salon_model, customer_model, preferences_model, appointments_model, review_model
+from endpoints import admin_router, beautician_router, salon_router, customer_router, preferences_router, appointments_router, review_router
+from database import Base
+
+from database import engine
+
+def get_db():
+     db = Session(bind=engine)
+     try:
+         yield db
+     finally:
+         db.close()
+
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI()
+
+app.include_router(admin_router.router, prefix="/admins", tags=["admins"])
+app.include_router(beautician_router.router, prefix="/beauticians", tags=["beauticians"])
+app.include_router(salon_router.router, prefix="/salons", tags=["salons"])
+app.include_router(customer_router.router, prefix="/customers", tags=["customers"])
+app.include_router(preferences_router.router, prefix="/preferences", tags=["preferences"])
+app.include_router(appointments_router.router, prefix="/appointments", tags=["appointments"])
+app.include_router(review_router.router, prefix="/reviews", tags=["reviews"])
+
+
 
 # Define the data model for incoming requests
 class Review(BaseModel):
@@ -19,7 +49,7 @@ class Preference(BaseModel):
     average_time: List[str]
 
 # Initialize FastAPI app
-app = FastAPI()
+
 
 # Load the model and tokenizer
 MODEL_PATH = 'path_to_save_model'
