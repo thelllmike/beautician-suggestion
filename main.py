@@ -2,6 +2,7 @@ from importlib import metadata
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List
+from fastapi.middleware.cors import CORSMiddleware
 from requests import Session
 import torch
 from transformers import BertTokenizer, BertForSequenceClassification
@@ -22,9 +23,21 @@ def get_db():
      finally:
          db.close()
 
+
+
 Base.metadata.create_all(bind=engine)
 
+
+
+
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 app.include_router(admin_router.router, prefix="/admins", tags=["admins"])
 app.include_router(beautician_router.router, prefix="/beauticians", tags=["beauticians"])
