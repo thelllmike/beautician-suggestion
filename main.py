@@ -135,7 +135,9 @@ async def recommend_beauticians(preferences: Preference, db: Session = Depends(g
         return score
 
     beauticians['score'] = beauticians.apply(score_beautician, axis=1)
-    recommended = beauticians.sort_values(by='score', ascending=False)
+
+    # Remove duplicate beauticians by keeping the highest scored entry for each
+    recommended = beauticians.sort_values(by='score', ascending=False).drop_duplicates(subset=['Beautician_ID'], keep='first')
 
     # Get unique beautician IDs from the sorted recommendations
     beautician_ids = recommended['Beautician_ID'].tolist()
@@ -173,6 +175,8 @@ async def recommend_beauticians(preferences: Preference, db: Session = Depends(g
             recommendations.append(beautician_info)
 
     return recommendations
+
+
 
 if __name__ == "__main__":
     import uvicorn

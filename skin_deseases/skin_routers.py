@@ -51,9 +51,16 @@ def extract_features(model, image):
     features = features.reshape(1, -1)  # Flatten to 1D for a single image
     return features
 
-# Function to suggest treatment based on the predicted class and affected percentage
+# Updated function to suggest treatment based on the predicted class and affected percentage
 def suggest_treatment(predicted_class, affected_percentage):
-    filtered_df = treatment_df[(treatment_df['Issue'] == predicted_class.capitalize()) & (treatment_df['Affected_Percentage'] >= affected_percentage)]
+    # Ensure the first letter is capitalized for uniform matching
+    predicted_class = predicted_class.capitalize()
+    
+    # Filter the treatment dataframe based on the issue and affected percentage
+    filtered_df = treatment_df[
+        (treatment_df['Issue'] == predicted_class) &
+        (treatment_df['Affected_Percentage'] <= affected_percentage)
+    ]
     
     if not filtered_df.empty:
         suggestion = filtered_df.iloc[0].to_dict()
@@ -100,7 +107,10 @@ def calculate_affected_percentage(cnn_model, xgb_model, svm_model, image_path):
         
         return affected_percentage, xgb_predicted_label, svm_predicted_label, suggested_treatment
     else:
-        return 0.0, 'normal', 'normal', None
+        # For normal skin, use the affected percentage to suggest a treatment
+        affected_percentage = 0  # Assuming 0% for normal skin
+        suggested_treatment = suggest_treatment('Normal', affected_percentage)
+        return affected_percentage, 'normal', 'normal', suggested_treatment
 
 @router.post("/detect_acne", response_model=AcneDetectionResponse)
 async def detect_acne(file: UploadFile = File(...)):
@@ -116,7 +126,7 @@ async def detect_acne(file: UploadFile = File(...)):
         # Remove the temporary file after processing
         os.remove(file_path)
 
-        message = f"{xgb_label.capitalize()} detected by XGBoost, {svm_label.capitalize()} detected by SVM" if affected_percentage > 0 else "No significant issues detected"
+        message = f"{xgb_label.capitalize()} detected by XGBoost, {svm_label.capitalize()} detected by SVM" if affected_percentage > 0 else "Normal skin detected"
         
         # Add treatment suggestion to the response
         response = AcneDetectionResponse(affected_percentage=affected_percentage, message=message, treatment=suggested_treatment)

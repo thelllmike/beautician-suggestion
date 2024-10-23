@@ -106,3 +106,4 @@ hair/haiClassification_mask.pth
 # hair/hair_care_recommendations.pkl
 hair/hair_maskrcnn.pth
 
+bert_lstm_model2.pth
