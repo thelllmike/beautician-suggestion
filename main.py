@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
 from tensorflow.keras.models import load_model
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, Depends
 from pydantic import BaseModel
 from typing import List
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,9 +10,9 @@ import torch
 from transformers import BertTokenizer, BertForSequenceClassification
 import pandas as pd
 
-import crud.review_crud as crud  # Correct import path
+import crud.review_crud as crud
 from models import admin_model, beautician_model, customer_model, preferences_model, appointments_model, review_model, visuals_model
-from endpoints import admin_router, beautician_router, salon_router, customer_router, preferences_router, appointments_router, review_router, skin_router, visuals_router, skin_colour_router ,review
+from endpoints import admin_router, beautician_router, salon_router, customer_router, preferences_router, appointments_router, review_router, skin_router, visuals_router, skin_colour_router, review
 from cluster import cluster_router
 from skin_deseases import skin_routers
 from hair import hair_router
@@ -32,10 +32,10 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(admin_router.router, prefix="/admins", tags=["admins"])
@@ -46,7 +46,7 @@ app.include_router(preferences_router.router, prefix="/preferences", tags=["pref
 app.include_router(appointments_router.router, prefix="/appointments", tags=["appointments"])
 app.include_router(review_router.router, prefix="/reviews", tags=["reviews"])
 app.include_router(visuals_router.router, prefix="/visuals", tags=["visuals"])
-app.include_router(cluster_router.router, prefix="/cluster", tags=["cluster"])  # Add the cluster router
+app.include_router(cluster_router.router, prefix="/cluster", tags=["cluster"])
 app.include_router(skin_router.router, prefix="/skin", tags=["skin"])
 app.include_router(skin_routers.router, prefix="/skin_deseases", tags=["skin_deseases"])
 app.include_router(skin_colour_router.router, prefix="/skin_color", tags=["skin_color"])
@@ -75,10 +75,10 @@ emoji_model = load_model('emoji_sentiment_model.h5')
 
 # Load the encoders
 emoji_encoder = LabelEncoder()
-emoji_encoder.classes_ = np.load('emoji_classes.npy', allow_pickle=True)  # Load emoji classes
+emoji_encoder.classes_ = np.load('emoji_classes.npy', allow_pickle=True)
 
 sentiment_encoder = LabelEncoder()
-sentiment_encoder.classes_ = np.load('sentiment_classes.npy', allow_pickle=True)  # Load sentiment classes
+sentiment_encoder.classes_ = np.load('sentiment_classes.npy', allow_pickle=True)
 
 # Function to extract emojis from text
 def extract_emojis(text):
@@ -121,7 +121,7 @@ async def recommend_beauticians(preferences: Preference, db: Session = Depends(g
         for pref, keywords in preferences.dict().items():
             if any(keyword.lower() in review_text for keyword in keywords):
                 score += 1
-        
+
         # Adjust score based on emoji sentiment analysis
         emojis = extract_emojis(row['Comment'])
         if emojis:
@@ -136,13 +136,12 @@ async def recommend_beauticians(preferences: Preference, db: Session = Depends(g
 
     beauticians['score'] = beauticians.apply(score_beautician, axis=1)
 
-    # Remove duplicate beauticians by keeping the highest scored entry for each
-    recommended = beauticians.sort_values(by='score', ascending=False).drop_duplicates(subset=['Beautician_ID'], keep='first')
+    # Calculate average score per beautician
+    average_scores = beauticians.groupby('Beautician_ID')['score'].mean().reset_index()
+    average_scores = average_scores.sort_values(by='score', ascending=False)
 
-    # Get unique beautician IDs from the sorted recommendations
-    beautician_ids = recommended['Beautician_ID'].tolist()
-
-    # Fetch the beautician details along with their associated salon names and IDs
+    # Fetch beautician details with associated salon names and IDs
+    beautician_ids = average_scores['Beautician_ID'].tolist()
     beauticians_details = (
         db.query(models.Beautician, salon_models.Salon.Name.label("Salon_Name"), salon_models.Salon.Salon_ID)
         .join(salon_models.Salon, models.Beautician.Salon_ID == salon_models.Salon.Salon_ID)
@@ -153,9 +152,9 @@ async def recommend_beauticians(preferences: Preference, db: Session = Depends(g
     # Create a dictionary for quick lookup
     beautician_dict = {b.Beautician.Beautician_ID: (b.Beautician, b.Salon_Name, b.Salon_ID) for b in beauticians_details}
 
-    # Combine the beautician details with the scores and keep the order
+    # Combine beautician details with average scores
     recommendations = []
-    for index, row in recommended.iterrows():
+    for index, row in average_scores.iterrows():
         beautician_data = beautician_dict.get(row['Beautician_ID'])
         if beautician_data:
             beautician, salon_name, salon_id = beautician_data
@@ -170,12 +169,11 @@ async def recommend_beauticians(preferences: Preference, db: Session = Depends(g
                 "Image": beautician.Image,
                 "Salon_Name": salon_name,
                 "Salon_ID": salon_id,  
-                "score": row['score']
+                "average_score": row['score']
             }
             recommendations.append(beautician_info)
 
     return recommendations
-
 
 
 if __name__ == "__main__":

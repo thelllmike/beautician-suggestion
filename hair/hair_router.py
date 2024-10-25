@@ -45,7 +45,16 @@ async def process_image(file: UploadFile = File(...)):
     # Call the pipeline to process the image
     try:
         results = mp.Pipeline(file_path)
-        hair_dict = {0: 'Curly', 1: 'Short', 2: 'Straight', 3: 'Braided'}  # Match hair type with data in the pickle file
+        
+        # Updated hair dictionary based on the types in the image you provided
+        hair_dict = {
+            0: 'Long-Curly',
+            1: 'Short',
+            2: 'Long-Straight',
+            3: 'Long-Braided',
+            4: 'Long-Wavy'
+        }  # Updated hair types based on the provided image
+
         max_index = np.argmax(results)
         hairType = hair_dict.get(max_index)
 
