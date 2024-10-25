@@ -126,7 +126,7 @@ async def detect_acne(file: UploadFile = File(...)):
         # Remove the temporary file after processing
         os.remove(file_path)
 
-        message = f"{xgb_label.capitalize()} detected by XGBoost, {svm_label.capitalize()} detected by SVM" if affected_percentage > 0 else "Normal skin detected"
+        message = f"{xgb_label.capitalize()} skin detect as, " if affected_percentage > 0 else "Normal skin detected"
         
         # Add treatment suggestion to the response
         response = AcneDetectionResponse(affected_percentage=affected_percentage, message=message, treatment=suggested_treatment)
