@@ -39,7 +39,7 @@ For a detailed walkthrough, watch the video tutorial below:
 
 ## Video Tutorial
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/Yp8ikaL80qU" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[![Video Tutorial](https://img.youtube.com/vi/Yp8ikaL80qU/0.jpg)](https://www.youtube.com/watch?v=Yp8ikaL80qU)
 
 ---
 
